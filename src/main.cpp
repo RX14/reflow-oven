@@ -4,9 +4,12 @@
 #include <max6675.h>
 
 #define TIME_WINDOW 512
+
 // Double Exponential Smoothing factors
 #define DATA_SMOOTHING 0.33d
 #define TREND_SMOOTHING 0.2d
+
+#define SSR_PIN 2
 
 MAX6675 thermocouple;
 
@@ -35,7 +38,7 @@ void setup() {
   pid_autotune.SetControlType(0);
   pid_autotune.SetLookbackSec(5);
 
-  pinMode(9, OUTPUT);
+  pinMode(SSR_PIN, OUTPUT);
 }
 
 unsigned long lastTempReading = 0;
@@ -43,6 +46,7 @@ unsigned long lastWrite = 0;
 
 void loop() {
   unsigned long now = millis();
+
   if (now - lastTempReading > 250) {
     double measuredTemp = thermocouple.readCelsius();
     lastTempReading = now;
@@ -63,7 +67,7 @@ void loop() {
       Serial.print("Kd: ");
       Serial.println(pid_autotune.GetKd());
 
-      digitalWrite(9, LOW);
+      digitalWrite(SSR_PIN, LOW);
       while (1)
         ;
     }
@@ -73,9 +77,9 @@ void loop() {
 
   unsigned long windowTime = now % TIME_WINDOW;
   if (windowTime < onTimeMs) {
-    digitalWrite(9, HIGH);
+    digitalWrite(SSR_PIN, HIGH);
   } else {
-    digitalWrite(9, LOW);
+    digitalWrite(SSR_PIN, LOW);
   }
 
   if (now - lastWrite > 500) {
