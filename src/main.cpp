@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <PID_v1.h>
 
 #define TIME_WINDOW 512
