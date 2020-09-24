@@ -103,6 +103,12 @@ void loop() {
     } else if (cmd == 's') {
       Serial.write("Set: ");
       targetTemp = Serial.parseFloat();
+      if (targetTemp == 0) {
+        pid.SetMode(MANUAL);
+        onTimeMs = 0;
+      } else {
+        pid.SetMode(AUTOMATIC);
+      }
     }
   }
 }
