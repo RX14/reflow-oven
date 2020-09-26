@@ -14,7 +14,7 @@ double currentTemp;
 double targetTemp = 0;
 double onTimeMs;
 double rawOnTimeMs;
-PID pid(&currentTemp, &onTimeMs, &targetTemp, 10.0, 0.09, 0, P_ON_M, DIRECT);
+PID pid(&currentTemp, &onTimeMs, &targetTemp, 0.58, 0.004, 0, P_ON_M, DIRECT);
 
 void setup() {
   analogReference(EXTERNAL);
