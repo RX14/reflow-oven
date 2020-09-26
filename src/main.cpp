@@ -1,23 +1,20 @@
 #include <Arduino.h>
 #include <PID_v1.h>
 
-#define TIME_WINDOW 512
-#define PID_WINDOW TIME_WINDOW * 2
-#define SAMPLE_TIME 250
-
 #define SSR_PIN 2
 #define PRT_PIN A6
 
 #define PRT_RESISTOR 1100
 
-double prtCMASum;
-int prtCMACount = 0;
+#define TIME_WINDOW 100
+#define PID_WINDOW TIME_WINDOW * 2
+#define SAMPLE_TIME 250
 
 double currentTemp;
 double targetTemp = 0;
 double onTimeMs;
 double rawOnTimeMs;
-PID pid(&currentTemp, &onTimeMs, &targetTemp, 13.74, 0.05, 0, P_ON_M, DIRECT);
+PID pid(&currentTemp, &onTimeMs, &targetTemp, 10.0, 0.09, 0, P_ON_M, DIRECT);
 
 void setup() {
   analogReference(EXTERNAL);
@@ -30,20 +27,62 @@ void setup() {
   pinMode(SSR_PIN, OUTPUT);
 }
 
-unsigned long lastTempReading = 0;
-unsigned long lastWrite = 0;
+void printStatus() {
+  Serial.println();
+  Serial.print("Temp: ");
+  Serial.println(currentTemp);
+  Serial.print("Target: ");
+  Serial.println(targetTemp);
+  Serial.print("onTime: ");
+  Serial.println(onTimeMs);
+  Serial.print("Kp: ");
+  Serial.println(pid.GetKp());
+  Serial.print("Ki: ");
+  Serial.println(pid.GetKi(), 3);
+  Serial.print("Kd: ");
+  Serial.println(pid.GetKd());
+}
+
+void handleCommand() {
+  char cmd = (char)Serial.read();
+  if (cmd == 'p') {
+    Serial.write("Kp: ");
+    double p = Serial.parseFloat();
+    pid.SetTunings(p, pid.GetKi(), pid.GetKd(), P_ON_M);
+  } else if (cmd == 'i') {
+    Serial.write("Ki: ");
+    double i = Serial.parseFloat();
+    pid.SetTunings(pid.GetKp(), i, pid.GetKd(), P_ON_M);
+  } else if (cmd == 'd') {
+    Serial.write("Kd: ");
+    double d = Serial.parseFloat();
+    pid.SetTunings(pid.GetKp(), pid.GetKi(), d, P_ON_M);
+  } else if (cmd == 's') {
+    Serial.write("Set: ");
+    targetTemp = Serial.parseFloat();
+    if (targetTemp == 0) {
+      pid.SetMode(MANUAL);
+      onTimeMs = 0;
+    } else {
+      pid.SetMode(AUTOMATIC);
+    }
+  }
+}
+
+double prtCMASum;
+int prtCMACount = 0;
 
 double getTemp() {
   prtCMACount = 0;
 
   double rPRT = PRT_RESISTOR * ((2 / (prtCMASum / 1024)) - 1);
+  double temp = (rPRT - 1000) / 3.851;
 
-  // if (abs(rawTemp - targetTemp) < 3) {
-  //   rawTemp = targetTemp;
-  // }
-
-  return (rPRT - 1000) / 3.851;
+  return temp;
 }
+
+unsigned long lastTempReading = 0;
+unsigned long lastWrite = 0;
 
 void loop() {
   unsigned long now = millis();
@@ -68,47 +107,10 @@ void loop() {
 
   if (now - lastWrite > 500) {
     lastWrite = now;
-
-    Serial.println();
-    Serial.print("R: ");
-    Serial.println(prtCMASum);
-    Serial.print("Temp: ");
-    Serial.println(currentTemp);
-    Serial.print("Target: ");
-    Serial.println(targetTemp);
-    Serial.print("onTime: ");
-    Serial.println(onTimeMs);
-    Serial.print("Kp: ");
-    Serial.println(pid.GetKp());
-    Serial.print("Ki: ");
-    Serial.println(pid.GetKi());
-    Serial.print("Kd: ");
-    Serial.println(pid.GetKd());
+    printStatus();
   }
 
   if (Serial.available() > 0) {
-    char cmd = (char)Serial.read();
-    if (cmd == 'p') {
-      Serial.write("Kp: ");
-      double p = Serial.parseFloat();
-      pid.SetTunings(p, pid.GetKi(), pid.GetKd(), P_ON_M);
-    } else if (cmd == 'i') {
-      Serial.write("Ki: ");
-      double i = Serial.parseFloat();
-      pid.SetTunings(pid.GetKp(), i, pid.GetKd(), P_ON_M);
-    } else if (cmd == 'd') {
-      Serial.write("Kd: ");
-      double d = Serial.parseFloat();
-      pid.SetTunings(pid.GetKp(), pid.GetKi(), d, P_ON_M);
-    } else if (cmd == 's') {
-      Serial.write("Set: ");
-      targetTemp = Serial.parseFloat();
-      if (targetTemp == 0) {
-        pid.SetMode(MANUAL);
-        onTimeMs = 0;
-      } else {
-        pid.SetMode(AUTOMATIC);
-      }
-    }
+    handleCommand();
   }
 }
