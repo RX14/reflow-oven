@@ -26,6 +26,16 @@ void setup() {
   pinMode(SSR_PIN, OUTPUT);
 }
 
+void abort(char const *message) {
+  digitalWrite(SSR_PIN, LOW);
+
+  Serial.print("ABORT: ");
+  Serial.println(message);
+
+  while (true)
+    ;
+}
+
 typedef enum { IDLE, PREHEAT, SOAK, REFLOW, COOLDOWN } State;
 
 State state = IDLE;
@@ -44,6 +54,9 @@ char const *describeState(State state) {
   case COOLDOWN:
     return "COOLDOWN";
   }
+
+  abort("reached end of describeState");
+  return nullptr;
 }
 
 void startReflow() {
@@ -95,6 +108,9 @@ State nextState() {
       return COOLDOWN;
     }
   }
+
+  abort("reached end of nextState");
+  return IDLE;
 }
 
 void handleState() {
@@ -114,6 +130,9 @@ void handleState() {
   case COOLDOWN:
     setpoint = 0;
     onTimeMs = 0;
+    break;
+  default:
+    abort("unknown state in handleState");
     break;
   }
 }
