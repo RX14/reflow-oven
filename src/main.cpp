@@ -13,7 +13,7 @@
 double currentTemp;
 double setpoint = 0;
 double onTimeMs;
-PID pid(&currentTemp, &onTimeMs, &setpoint, 0.58, 0.004, 0, P_ON_M, DIRECT);
+PID pid(&currentTemp, &onTimeMs, &setpoint, 0.25, 0.0012, 0, P_ON_E, DIRECT);
 
 void setup() {
   analogReference(EXTERNAL);
@@ -37,7 +37,7 @@ void printStatus() {
   Serial.print("Kp: ");
   Serial.println(pid.GetKp());
   Serial.print("Ki: ");
-  Serial.println(pid.GetKi(), 3);
+  Serial.println(pid.GetKi(), 4);
   Serial.print("Kd: ");
   Serial.println(pid.GetKd());
 }
@@ -47,15 +47,15 @@ void handleCommand() {
   if (cmd == 'p') {
     Serial.write("Kp: ");
     double p = Serial.parseFloat();
-    pid.SetTunings(p, pid.GetKi(), pid.GetKd(), P_ON_M);
+    pid.SetTunings(p, pid.GetKi(), pid.GetKd());
   } else if (cmd == 'i') {
     Serial.write("Ki: ");
     double i = Serial.parseFloat();
-    pid.SetTunings(pid.GetKp(), i, pid.GetKd(), P_ON_M);
+    pid.SetTunings(pid.GetKp(), i, pid.GetKd());
   } else if (cmd == 'd') {
     Serial.write("Kd: ");
     double d = Serial.parseFloat();
-    pid.SetTunings(pid.GetKp(), pid.GetKi(), d, P_ON_M);
+    pid.SetTunings(pid.GetKp(), pid.GetKi(), d);
   } else if (cmd == 's') {
     Serial.write("Setpoint: ");
     setpoint = Serial.parseFloat();
