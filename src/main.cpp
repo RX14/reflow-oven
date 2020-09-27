@@ -26,6 +26,95 @@ void setup() {
   pinMode(SSR_PIN, OUTPUT);
 }
 
+typedef enum { IDLE, PREHEAT, SOAK, REFLOW, COOLDOWN } State;
+
+State state = IDLE;
+unsigned long stateTimer = 0;
+
+char const *describeState(State state) {
+  switch (state) {
+  case IDLE:
+    return "IDLE";
+  case PREHEAT:
+    return "PREHEAT";
+  case SOAK:
+    return "SOAK";
+  case REFLOW:
+    return "REFLOW";
+  case COOLDOWN:
+    return "COOLDOWN";
+  }
+}
+
+void startReflow() {
+  pid.SetMode(AUTOMATIC);
+  stateTimer = 0;
+  state = PREHEAT;
+}
+
+State nextState() {
+  switch (state) {
+  case IDLE:
+    return IDLE;
+  case PREHEAT:
+    if (currentTemp >= 100) {
+      pid.SetMode(AUTOMATIC);
+      stateTimer = 0;
+      return SOAK;
+    } else {
+      return PREHEAT;
+    }
+  case SOAK:
+    if (currentTemp >= 165) {
+      pid.SetMode(MANUAL);
+      stateTimer = 0;
+      return REFLOW;
+    } else {
+      return SOAK;
+    }
+  case REFLOW:
+    if (currentTemp >= 215) {
+      pid.SetMode(MANUAL);
+      stateTimer = 0;
+      return COOLDOWN;
+    } else {
+      return REFLOW;
+    }
+  case COOLDOWN:
+    if (currentTemp <= 50) {
+      pid.SetMode(MANUAL);
+      stateTimer = 0;
+      return IDLE;
+    } else {
+      return COOLDOWN;
+    }
+  }
+}
+
+void handleState() {
+  switch (state) {
+  case IDLE:
+    break;
+  case PREHEAT:
+    setpoint = 110;
+    break;
+  case SOAK:
+    //   const double slope = (165.0 - 100.0) / (120000.0);
+    //   setpoint = 110 + (slope * stateTimer);
+    // } break;
+    setpoint = 180;
+    break;
+  case REFLOW:
+    setpoint = 0;
+    onTimeMs = TIME_WINDOW;
+    break;
+  case COOLDOWN:
+    setpoint = 0;
+    onTimeMs = 0;
+    break;
+  }
+}
+
 void printStatus() {
   Serial.println();
   Serial.print("Temp: ");
@@ -40,6 +129,10 @@ void printStatus() {
   Serial.println(pid.GetKi(), 4);
   Serial.print("Kd: ");
   Serial.println(pid.GetKd());
+  Serial.print("PID State: ");
+  Serial.println(pid.GetMode() == MANUAL ? "MANUAL" : "AUTOMATIC");
+  Serial.print("Reflow State: ");
+  Serial.println(describeState(state));
 }
 
 void handleCommand() {
@@ -65,6 +158,13 @@ void handleCommand() {
     } else {
       pid.SetMode(AUTOMATIC);
     }
+  } else if (cmd == 'g') {
+    startReflow();
+  } else if (cmd == 'q') {
+    pid.SetMode(MANUAL);
+    state = IDLE;
+    setpoint = 0;
+    onTimeMs = 0;
   }
 }
 
@@ -82,6 +182,7 @@ double getTemp() {
 
 unsigned long lastTempReading = 0;
 unsigned long lastWrite = 0;
+unsigned long lastNow = 0;
 
 void loop() {
   unsigned long now = millis();
@@ -94,6 +195,10 @@ void loop() {
     currentTemp = getTemp();
     lastTempReading = now;
   }
+
+  stateTimer += now - lastNow;
+  state = nextState();
+  handleState();
 
   pid.Compute();
 
@@ -112,4 +217,6 @@ void loop() {
   if (Serial.available() > 0) {
     handleCommand();
   }
+
+  lastNow = now;
 }
