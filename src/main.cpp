@@ -199,6 +199,10 @@ double getTemp() {
   double rPRT = PRT_RESISTOR * ((2 / (prtCMASum / 1024)) - 1);
   double temp = (rPRT - 1000) / 3.851;
 
+  if (!(temp > 10) || !(temp < 360)) {
+    abort("temp out of range!");
+  }
+
   return temp;
 }
 
