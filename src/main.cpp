@@ -52,12 +52,18 @@ void startReflow() {
   state = PREHEAT;
 }
 
+#define PREHEAT_TARGET 100
+#define SOAK_TARGET 165
+#define REFLOW_TARGET 215
+
+#define TARGET_OFFSET 15
+
 State nextState() {
   switch (state) {
   case IDLE:
     return IDLE;
   case PREHEAT:
-    if (currentTemp >= 100) {
+    if (currentTemp >= PREHEAT_TARGET) {
       pid.SetMode(AUTOMATIC);
       stateTimer = 0;
       return SOAK;
@@ -65,7 +71,7 @@ State nextState() {
       return PREHEAT;
     }
   case SOAK:
-    if (currentTemp >= 165) {
+    if (currentTemp >= SOAK_TARGET) {
       pid.SetMode(MANUAL);
       stateTimer = 0;
       return REFLOW;
@@ -73,7 +79,7 @@ State nextState() {
       return SOAK;
     }
   case REFLOW:
-    if (currentTemp >= 215) {
+    if (currentTemp >= REFLOW_TARGET) {
       pid.SetMode(MANUAL);
       stateTimer = 0;
       return COOLDOWN;
@@ -96,13 +102,10 @@ void handleState() {
   case IDLE:
     break;
   case PREHEAT:
-    setpoint = 110;
+    setpoint = PREHEAT_TARGET + TARGET_OFFSET;
     break;
   case SOAK:
-    //   const double slope = (165.0 - 100.0) / (120000.0);
-    //   setpoint = 110 + (slope * stateTimer);
-    // } break;
-    setpoint = 180;
+    setpoint = SOAK_TARGET + TARGET_OFFSET;
     break;
   case REFLOW:
     setpoint = 0;
