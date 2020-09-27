@@ -11,10 +11,9 @@
 #define SAMPLE_TIME 250
 
 double currentTemp;
-double targetTemp = 0;
+double setpoint = 0;
 double onTimeMs;
-double rawOnTimeMs;
-PID pid(&currentTemp, &onTimeMs, &targetTemp, 0.58, 0.004, 0, P_ON_M, DIRECT);
+PID pid(&currentTemp, &onTimeMs, &setpoint, 0.58, 0.004, 0, P_ON_M, DIRECT);
 
 void setup() {
   analogReference(EXTERNAL);
@@ -31,8 +30,8 @@ void printStatus() {
   Serial.println();
   Serial.print("Temp: ");
   Serial.println(currentTemp);
-  Serial.print("Target: ");
-  Serial.println(targetTemp);
+  Serial.print("Setpoint: ");
+  Serial.println(setpoint);
   Serial.print("onTime: ");
   Serial.println(onTimeMs);
   Serial.print("Kp: ");
@@ -58,9 +57,9 @@ void handleCommand() {
     double d = Serial.parseFloat();
     pid.SetTunings(pid.GetKp(), pid.GetKi(), d, P_ON_M);
   } else if (cmd == 's') {
-    Serial.write("Set: ");
-    targetTemp = Serial.parseFloat();
-    if (targetTemp == 0) {
+    Serial.write("Setpoint: ");
+    setpoint = Serial.parseFloat();
+    if (setpoint == 0) {
       pid.SetMode(MANUAL);
       onTimeMs = 0;
     } else {
