@@ -13,7 +13,7 @@
 double currentTemp;
 double setpoint = 0;
 double onTimeMs;
-PID pid(&currentTemp, &onTimeMs, &setpoint, 0.4, 0.0012, 0, P_ON_E, DIRECT);
+PID pid(&currentTemp, &onTimeMs, &setpoint, 0.5, 0.0015, 0, P_ON_E, DIRECT);
 
 void setup() {
   analogReference(EXTERNAL);
@@ -67,7 +67,7 @@ void startReflow() {
 
 #define PREHEAT_TARGET 120
 #define SOAK_TARGET 150
-#define REFLOW_TARGET 210
+#define REFLOW_TARGET 220
 
 #define TARGET_OFFSET 15
 
