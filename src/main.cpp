@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <PID_v1.h>
 
-#define SSR_PIN 2
-#define PRT_PIN A6
+#define SSR_PIN 13
+#define PRT_PIN A0
 
 #define PRT_RESISTOR 1100
 
